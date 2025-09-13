@@ -1,12 +1,33 @@
 #pragma once
 
 #include "byte_stream.hh"
+#include <map>
 
 class Reassembler
 {
 public:
+  // Index of the next unprocessed byte
+  uint64_t next_index = 0;
+  // Cache that stores out-of-order incoming segments(according to their sequences)
+  std::map<uint64_t, std::string> pending;
+  // Receiving segment with is_last_substring == true or not
+  bool eof_flag = false;
+  // Index of the last segment
+  uint64_t eof_index = 0;
+  // Bytes in the cache
+  uint64_t pending_count_ = 0;
+  // Last segment's index
+  uint64_t eof_index_ = 0;
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) {}
+  explicit Reassembler( ByteStream&& output )
+    : next_index( 0 )
+    , pending()
+    , eof_flag( false )
+    , eof_index( 0 )
+    , pending_count_( 0 )
+    , eof_index_( 0 )
+    , output_( std::move( output ) )
+  {}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -37,7 +58,8 @@ public:
   // Access output stream reader
   Reader& reader() { return output_.reader(); }
   const Reader& reader() const { return output_.reader(); }
-
+  // add a non-const writer() for checkpoint2
+  Writer& writer() { return output_.writer(); }
   // Access output stream writer, but const-only (can't write from outside)
   const Writer& writer() const { return output_.writer(); }
 

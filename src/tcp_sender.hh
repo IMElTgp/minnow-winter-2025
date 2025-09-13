@@ -4,14 +4,49 @@
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
 
+#include <deque>
 #include <functional>
 
 class TCPSender
 {
 public:
+  // retransmit timer
+  uint64_t retransmit_timer_ = 0;
+  bool timer_running_ = false;
+  // consecutive retransmissions
+  uint64_t consecutive_retransmissions_ = 0;
+  // next seqno to send
+  uint64_t next_seqno_ = 0;
+  // RTO
+  uint64_t RTO_ = 0;
+  // number of segment(s) to be sent
+  // if 0, pretend to be 1 and send a testing segment
+  uint64_t sending_window_ = 0;
+  // biggest ackno received
+  uint64_t max_ackno_ = 0;
+  // segments-in-flight(sent but not acked yet)
+  // maybe std::queue is enough?
+  std::deque<TCPSenderMessage> segments_in_flight_;
+  // judge if SYN and FIN have benn sent (for zero-window test segment)
+  bool syn_sent_ = false;
+  bool fin_sent_ = false;
+  bool zero_win_advertise_ = false;
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */
   TCPSender( ByteStream&& input, Wrap32 isn, uint64_t initial_RTO_ms )
-    : input_( std::move( input ) ), isn_( isn ), initial_RTO_ms_( initial_RTO_ms )
+    : retransmit_timer_( 0 )
+    , timer_running_( false )
+    , consecutive_retransmissions_( 0 )
+    , next_seqno_( 0 )
+    , RTO_( initial_RTO_ms )
+    , sending_window_( 0 )
+    , max_ackno_( 0 )
+    , segments_in_flight_()
+    , syn_sent_( false )
+    , fin_sent_( false )
+    , zero_win_advertise_( false )
+    , input_( std::move( input ) )
+    , isn_( isn )
+    , initial_RTO_ms_( initial_RTO_ms )
   {}
 
   /* Generate an empty TCPSenderMessage */

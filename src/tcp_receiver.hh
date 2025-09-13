@@ -7,6 +7,9 @@
 class TCPReceiver
 {
 public:
+  Wrap32 ISN_ { 0 };
+  bool isn_set_ = false;
+  bool has_RST_ = false;
   // Construct with given Reassembler
   explicit TCPReceiver( Reassembler&& reassembler ) : reassembler_( std::move( reassembler ) ) {}
 
